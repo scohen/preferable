@@ -1,0 +1,40 @@
+Preferable
+==========
+
+A simple plugin for preferences. This annotates ActiveRecord::Base to provide preferences
+capabilities.
+
+
+Example
+=======
+
+Say you want to store preferences for a User object. First, define a column in the users table
+called preferences of type text. Then in your user object, do the following:
+
+class User < ActiveRecord::Base
+  preference :foo, :default => true
+end
+
+This will add an accesssor for foo, which stores the data into the preferences column.
+This makes it easy to define forms for a group.
+For example:
+
+class User < ActiveRecord::Base
+    preference :digest, :default=> true, :description => 'Send email in a digest daily',
+               :group => :messaging
+               
+    
+    preference :digest_frequency, :default => :daily, :options=>[:daily, :weekly, :hourly],
+               :group => :messaging
+               
+    preference :background_color, :default=> '#fff',
+               :group => :display
+               
+User.pref_groups => [:messaging, :display]
+
+Similarly, you can retrieve preferences by group
+
+u = User.new
+u.prefs_in_group(:messaging) # => {:digest => true, :digest_frequency => :daily}
+
+Check out preferable.rb for more.
