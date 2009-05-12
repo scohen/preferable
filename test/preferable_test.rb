@@ -35,11 +35,16 @@ class Unrelated < SerializableBase
   preference :different_group,
              :default=> false,
              :group => :group2
+  preference :options,
+             :group=> :group2,
+             :default=> 'One',
+             :options=> ['One','Two','Three']
 end
 
 class UnrelatedSub < Unrelated
   preference :unrelated_sub_pref , :default => 'Kitchen'
   preference :another_pref, :default=> false, :group=> :group1
+  preference :number_pref, :default=>52, :group => :group1
 end
 
 class PreferencesTest < ActiveSupport::TestCase
@@ -57,8 +62,8 @@ class PreferencesTest < ActiveSupport::TestCase
   def test_preference_inheritence
     assert_equal [:base_boolean], Base.pref_names
     assert_equal [:base_boolean, :sub_1_pref], Sub1.pref_names
-    assert_equal [:unrelated, :different_group], Unrelated.pref_names
-    assert_equal [:unrelated, :different_group, :unrelated_sub_pref, :another_pref], UnrelatedSub.pref_names
+    assert_equal [:unrelated, :different_group, :options,], Unrelated.pref_names
+    assert_equal [:unrelated, :different_group, :options, :unrelated_sub_pref, :another_pref, :number_pref], UnrelatedSub.pref_names
   end
   
   def test_metadata
@@ -99,18 +104,26 @@ class PreferencesTest < ActiveSupport::TestCase
     expect = {:unrelated => true,
               :different_group=> false,
               :unrelated_sub_pref =>'Kitchen',
+              :options=> 'One',
+              :number_pref => 52,
               :another_pref=> false}
     assert_equal expect , prefs
   end
   
   def test_get_prefs_by_group
     groups = UnrelatedSub.new.prefs_in_group(:group1)
-    assert_equal({:unrelated => true, :another_pref=> false}, groups)
+    assert_equal({:unrelated => true, :another_pref=> false, :number_pref=> 52}, groups)
   end
   
   def test_preference_groups
     assert_equal [:group1, :group2,nil] , UnrelatedSub.pref_groups
   end
   
+  def test_infer_type_from_default
+    assert_equal :string, UnrelatedSub.pref_meta_for(:unrelated_sub_pref).type
+    assert_equal :boolean, UnrelatedSub.pref_meta_for(:another_pref).type
+    assert_equal :option, UnrelatedSub.pref_meta_for(:options).type
+    assert_equal :number, UnrelatedSub.pref_meta_for(:number_pref).type
+  end
  
 end

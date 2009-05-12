@@ -116,8 +116,12 @@ module Preferable
       @group = options[:group]
       @description = options[:description]
       @default = options[:default]
-      @type = options[:type] || :boolean
       @options = options[:options]
+      if @options
+        @type = :option
+      else
+        @type = options[:type] || infer_type_from_default(@default.class)
+      end
       @pref_order = options[:pref_order] 
     end
     
@@ -130,5 +134,17 @@ module Preferable
        :pref_order => pref_order
       }
     end
+    
+    private
+    def infer_type_from_default(clazz)
+      case clazz.to_s
+        when "TrueClass", "FalseClass"
+          :boolean
+        when "Fixnum", "Float"
+          :number
+        else
+          clazz.to_s.downcase.to_sym
+        end
+      end
   end
 end
