@@ -123,7 +123,35 @@ class PreferencesTest < ActiveSupport::TestCase
     assert_equal :string, UnrelatedSub.pref_meta_for(:unrelated_sub_pref).type
     assert_equal :boolean, UnrelatedSub.pref_meta_for(:another_pref).type
     assert_equal :option, UnrelatedSub.pref_meta_for(:options).type
-    assert_equal :number, UnrelatedSub.pref_meta_for(:number_pref).type
+    assert_equal :fixnum, UnrelatedSub.pref_meta_for(:number_pref).type
+  end
+  
+  class Safety < SerializableBase
+    preference :float, :default=> 30.28
+    preference :fixnum, :default => 28
+    preference :string , :default=> "hello there"
+    preference :boolean, :default=> false
+  end
+  def test_type_safety
+    s = Safety.new
+    assert_equal 30.28, s.float
+    assert_equal 28, s.fixnum
+    assert_equal "hello there", s.string
+    assert_equal false, s.boolean
+    
+    #play around a bit
+    s.float = "392.888"
+    assert_equal 392.888, s.float
+    s.fixnum= s.float
+    assert_equal 392, s.fixnum
+    s.boolean = 1
+    assert_equal true, s.boolean
+    s.boolean = 0
+    assert_equal false, s.boolean
+    s.boolean = "false"
+    assert_equal false, s.boolean
+    s.boolean = "true"
+    assert_equal true, s.boolean
   end
  
 end

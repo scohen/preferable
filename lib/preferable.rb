@@ -47,7 +47,7 @@ module Preferable
       order << name unless order.include? name
       self.send(:define_method, "#{name.to_s}=".to_sym) do |val|
         p = read_attribute(:preferences) || {}
-        p[name] = val
+        p[name] = to_correct_type(val, meta)
         write_attribute(:preferences,p)
       end
       
@@ -64,13 +64,14 @@ module Preferable
     
     def inherited(subclass)
       pref_meta.each do |name, meta|
-        puts "Defining #{name} in #{subclass}"
         subclass.class_eval %{
           define_preference name, meta
         }
       end
       super(subclass)
     end
+    
+
     
   end
   
@@ -100,6 +101,26 @@ module Preferable
       self.class.send(:pref_names).inject({}) do |acc,name|
         acc[name] = pref(name)
         acc
+      end
+    end
+    
+   private
+    def to_correct_type(val,meta)
+      case meta.type
+      when :string
+        val.to_s
+      when :boolean
+        if val == "true"
+          true
+        elsif val == true || val == false
+          val
+        else
+          val.to_i != 0 
+        end
+      when :fixnum
+        val.to_i
+      when :float
+        val.to_f
       end
     end
   end
@@ -140,8 +161,6 @@ module Preferable
       case clazz.to_s
         when "TrueClass", "FalseClass"
           :boolean
-        when "Fixnum", "Float"
-          :number
         else
           clazz.to_s.downcase.to_sym
         end
