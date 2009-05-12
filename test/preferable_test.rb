@@ -132,6 +132,7 @@ class PreferencesTest < ActiveSupport::TestCase
     preference :string , :default=> "hello there"
     preference :boolean, :default=> false
   end
+  
   def test_type_safety
     s = Safety.new
     assert_equal 30.28, s.float
@@ -154,4 +155,32 @@ class PreferencesTest < ActiveSupport::TestCase
     assert_equal true, s.boolean
   end
  
+ class Sequence < SerializableBase
+   preference :first, :default => false, :group => :g1
+   preference :second, :default=> false, :group => :g2
+   preference :third, :default => false, :group => :g1
+   preference :fourth, :default => false, :group => :g2
+ end
+ 
+ def test_ordering
+  expected_sequence = [:first,:second,:third,:fourth]
+  x = Sequence.new
+  assert_equal expected_sequence, Sequence.pref_names
+  assert_order_by_sequence(x,expected_sequence)
+  assert_order_by_sequence(x,[:first,:third],:g1)
+  assert_order_by_sequence(x,[:second,:fourth],:g2)
+ end
+ 
+ def assert_order_by_sequence(obj,seq, group = :all)
+   idx = 0
+   obj.each_pref_in_group(group) do |name, meta, value|
+     assert name
+     assert meta
+     assert !value.nil?
+     assert_equal seq[idx], name
+     idx += 1
+   end
+   assert idx > 0
+   
+ end
 end

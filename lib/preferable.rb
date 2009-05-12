@@ -104,6 +104,14 @@ module Preferable
       end
     end
     
+    def each_pref_in_group(group = :all)
+      prefs = prefs_in_group(group)
+      order = self.class.send(:pref_names) & prefs.keys
+      order.each do |name|
+        yield name, self.class.send(:pref_meta_for, name), self.send(name)
+      end
+    end
+    
    private
     def to_correct_type(val,meta)
       case meta.type
