@@ -122,7 +122,8 @@ class PreferencesTest < ActiveSupport::TestCase
   def test_infer_type_from_default
     assert_equal :string, UnrelatedSub.pref_meta_for(:unrelated_sub_pref).type
     assert_equal :boolean, UnrelatedSub.pref_meta_for(:another_pref).type
-    assert_equal :option, UnrelatedSub.pref_meta_for(:options).type
+    assert_equal :string, UnrelatedSub.pref_meta_for(:options).type
+    assert UnrelatedSub.pref_meta_for(:options).has_options?
     assert_equal :fixnum, UnrelatedSub.pref_meta_for(:number_pref).type
   end
   
@@ -197,15 +198,18 @@ class PreferencesTest < ActiveSupport::TestCase
    assert_equal :two, x.symbol
    x.symbol = 'three'
    assert_equal :three, x.symbol
+   assert_equal Symbol, x.symbol.class
  end
  
  def test_symbol_options_type_correct
    x = TypeSafety.new
-   assert :one, x.symbol_options
+   assert_equal :one, x.symbol_options
    x.symbol_options = :two
-   assert :two, x.symbol_options
+   assert_equal :two, x.symbol_options
    x.symbol_options = :seven
-   assert :two, x.symbol_options
+   assert_equal :two, x.symbol_options
+   x.symbol_options = 'one'
+   assert_equal :one, x.symbol_options
  end
  
 end

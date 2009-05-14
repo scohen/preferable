@@ -47,7 +47,8 @@ module Preferable
       order << name unless order.include? name
       self.send(:define_method, "#{name.to_s}=".to_sym) do |val|
         p = read_attribute(:preferences) || {}
-        p[name] = to_correct_type(val, meta)
+        value = to_correct_type(val, meta)
+        p[name] = value unless meta.has_options? && !meta.options.include?(value)
         write_attribute(:preferences,p)
       end
       
@@ -114,7 +115,7 @@ module Preferable
     
    private
     def to_correct_type(val,meta)
-      case meta.type
+      case meta.type        
       when :string
         val.to_s
       when :boolean
@@ -131,6 +132,8 @@ module Preferable
         val.to_f
       when :symbol
         val.to_sym
+      else
+        val
       end
     end
   end
@@ -148,11 +151,12 @@ module Preferable
       @description = options[:description]
       @default = options[:default]
       @options = options[:options]
-      if @options
-        @type = :option
-      else
-        @type = options[:type] || infer_type_from_default(@default.class)
+
+      if default.nil? && @options
+        @default = @options.first
       end
+            
+      @type = options[:type] || infer_type_from_default(@default.class)
       @pref_order = options[:pref_order] 
     end
     
@@ -165,7 +169,11 @@ module Preferable
        :pref_order => pref_order
       }
     end
-    
+
+    def has_options?
+      options && !options.empty?
+    end
+
     private
     def infer_type_from_default(clazz)
       case clazz.to_s
