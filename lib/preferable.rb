@@ -55,7 +55,7 @@ module Preferable
       self.send(:define_method, name.to_sym) do
         prefs = read_attribute(:preferences)
         if prefs
-          prefs[name] || meta.default
+          to_correct_type(prefs[name],meta) || meta.default
         else
           meta.default
         end
