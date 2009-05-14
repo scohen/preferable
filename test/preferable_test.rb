@@ -183,4 +183,29 @@ class PreferencesTest < ActiveSupport::TestCase
    assert idx > 0
    
  end
+ 
+ class TypeSafety < SerializableBase
+   preference :symbol,
+              :default=> :one
+   preference :symbol_options,
+              :options=>[:one,:two,:three]
+ end
+ 
+ def test_symbol_type_correct
+   x = TypeSafety.new
+   x.symbol = :two
+   assert_equal :two, x.symbol
+   x.symbol = 'three'
+   assert_equal :three, x.symbol
+ end
+ 
+ def test_symbol_options_type_correct
+   x = TypeSafety.new
+   assert :one, x.symbol_options
+   x.symbol_options = :two
+   assert :two, x.symbol_options
+   x.symbol_options = :seven
+   assert :two, x.symbol_options
+ end
+ 
 end

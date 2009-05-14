@@ -129,6 +129,8 @@ module Preferable
         val.to_i
       when :float
         val.to_f
+      when :symbol
+        val.to_sym
       end
     end
   end
