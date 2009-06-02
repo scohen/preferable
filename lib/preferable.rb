@@ -138,7 +138,6 @@ module Preferable
    private
     def to_correct_type(val,meta)
       return val if val.nil?
-      end
       case meta.type        
       when :string
         val.to_s
