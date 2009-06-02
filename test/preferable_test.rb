@@ -16,6 +16,8 @@ class SerializableBase
   def write_attribute(name, val)
     send "#{name}=".to_sym, val
   end
+  
+
 end
 
 class Base < SerializableBase
@@ -211,5 +213,41 @@ class PreferencesTest < ActiveSupport::TestCase
    x.symbol_options = 'one'
    assert_equal :one, x.symbol_options
  end
+ 
+ class Queryable < SerializableBase
+  def self.before_save(method_to_call)
+    @@before_saves ||= []
+    @@before_saves << method_to_call
+  end
+
+  def foo=(val)
+     @foo = val
+  end
+   
+  def foo
+     @foo
+  end
+   
+  def save
+    @@before_saves.each do |name|
+      self.send name
+    end
+  end
+  
+   preference :foo, :default=> false,
+              :queryable => :true
+   
+ end
+ 
+ def test_queryable_pref
+   d = Queryable.new
+   assert_equal false, d.foo
+   d.save
+   assert_equal false, d.foo
+   d.foo = true
+   assert_equal true, d.foo
+  
+ end
+ 
  
 end

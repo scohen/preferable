@@ -45,19 +45,30 @@ module Preferable
     def define_preference(name, meta)
       pref_meta[name] = meta
       order << name unless order.include? name
-      self.send(:define_method, "#{name.to_s}=".to_sym) do |val|
-        p = read_attribute(:preferences) || {}
-        value = to_correct_type(val, meta)
-        p[name] = value unless meta.has_options? && !meta.options.include?(value)
-        write_attribute(:preferences,p)
-      end
-      
-      self.send(:define_method, name.to_sym) do
-        prefs = read_attribute(:preferences)
-        if prefs
-          to_correct_type(prefs[name],meta) || meta.default
-        else
-          meta.default
+      if meta.queryable?
+        aliased = "old_#{name.to_s}".to_sym
+        self.send :before_save, :set_default_prefs
+        self.send :alias_method, aliased, name
+        self.send(:define_method, name.to_sym) do
+          attr = send aliased
+          attr ||= meta.default
+        end
+        
+      else
+        self.send(:define_method, "#{name.to_s}=".to_sym) do |val|
+          p = read_attribute(:preferences) || {}
+          value = to_correct_type(val, meta)
+          p[name] = value unless meta.has_options? && !meta.options.include?(value)
+          write_attribute(:preferences,p)
+        end
+        
+        self.send(:define_method, name.to_sym) do
+          prefs = read_attribute(:preferences)
+          if prefs
+            to_correct_type(prefs[name],meta) || meta.default
+          else
+            meta.default
+          end
         end
       end
       nil
@@ -113,8 +124,21 @@ module Preferable
       end
     end
     
+    def set_default_prefs
+      self.class.send(:pref_meta).each do |name, meta|
+        if meta.queryable?
+          attr = read_attribute(name)
+          if attr.nil?
+            write_attribute name.to_sym, meta.default
+          end
+        end
+      end
+    end
+    
    private
     def to_correct_type(val,meta)
+      return val if val.nil?
+      end
       case meta.type        
       when :string
         val.to_s
@@ -145,13 +169,17 @@ module Preferable
     attr_accessor :type
     attr_accessor :options
     attr_reader :pref_order
+    attr_reader :queryable
     
     def initialize(options={})
+      options = {:queryable=> false}.merge(options)
+      
       @group = options[:group]
       @description = options[:description]
       @default = options[:default]
       @options = options[:options]
-
+      @queryable = options[:queryable]
+      
       if default.nil? && @options
         @default = @options.first
       end
@@ -173,7 +201,11 @@ module Preferable
     def has_options?
       options && !options.empty?
     end
-
+    
+    def queryable?
+      queryable
+    end
+    
     private
     def infer_type_from_default(clazz)
       case clazz.to_s
