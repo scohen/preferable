@@ -45,30 +45,20 @@ module Preferable
     def define_preference(name, meta)
       pref_meta[name] = meta
       order << name unless order.include? name
-      if meta.queryable?
-        aliased = "old_#{name.to_s}".to_sym
-        self.send :before_save, :set_default_prefs
-        self.send :alias_method, aliased, name
-        self.send(:define_method, name.to_sym) do
-          attr = send aliased
-          attr ||= meta.default
-        end
-        
-      else
-        self.send(:define_method, "#{name.to_s}=".to_sym) do |val|
-          p = read_attribute(:preferences) || {}
-          value = to_correct_type(val, meta)
-          p[name] = value unless meta.has_options? && !meta.options.include?(value)
-          write_attribute(:preferences,p)
-        end
-        
-        self.send(:define_method, name.to_sym) do
-          prefs = read_attribute(:preferences)
-          if prefs
-            to_correct_type(prefs[name],meta) || meta.default
-          else
-            meta.default
-          end
+      self.send(:define_method, "#{name.to_s}=".to_sym) do |val|
+        p = read_attribute(:preferences) || {}
+        value = to_correct_type(val, meta)
+        p[name] = value unless meta.has_options? && !meta.options.include?(value)
+        write_attribute(:preferences,p)
+      end
+      
+      self.send(:define_method, name.to_sym) do
+        prefs = read_attribute(:preferences)
+        if prefs
+          rv = to_correct_type(prefs[name],meta)
+          (rv.nil?)? meta.default : rv 
+        else
+          meta.default
         end
       end
       nil
@@ -82,9 +72,6 @@ module Preferable
       end
       super(subclass)
     end
-    
-
-    
   end
   
   module PreferableInstanceMethods
